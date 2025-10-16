@@ -1,39 +1,38 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
-# Set up the title of the app
-st.title('Sales Analytics Application')
+# Title of the application
+st.title('გაყიდვების ანალიტიკა')
 
-# File upload functionality
-uploaded_file = st.file_uploader('Upload your Excel file', type='xlsx')
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-    st.write('Data:', df)
+# Upload data
+uploaded_file = st.file_uploader('აირჩიეთ მონაცემთა ფაილი', type=['csv'])
+if uploaded_file is not None:
+    try:
+        data = pd.read_csv(uploaded_file)
+        st.success('მონაცემები წარმატებით ჩაიტვირთა!')
+    except Exception as e:
+        st.error(f'მონაცემების ჩატვირთვის დროს მოხდა შეცდომა: {e}')
 
-# KPI Metrics
-st.header('KPI Metrics')
-# Example KPIs (replace with actual calculations)
-st.metric('Total Sales', df['Sales'].sum())
-st.metric('Average Growth Rate', df['Growth Rate'].mean())
+# Ensure data is loaded
+if 'data' in locals():
+    # Dashboard tab
+    st.header('დაშბორდი')
+    st.subheader('გაყიდვების მიმოხილვა')
+    st.write(data.describe())
 
-# Detailed Analysis
-st.header('Detailed Analysis')
+    # Analysis tab
+    st.header('ანალიზი')
+    selected_product = st.selectbox('აირჩიეთ პროდუქტი', data['Product'].unique())
+    product_data = data[data['Product'] == selected_product]
+    st.line_chart(product_data['Sales'])
 
-# Bar Chart
-st.subheader('Sales by Category')
-fig_bar = px.bar(df, x='Category', y='Sales', title='Sales by Category')
-st.plotly_chart(fig_bar)
+    # Forecast tab
+    st.header('მიმდინარე პროგნოზი')
+    st.write('აქ უნდა იყოს პროგნოზირების მოდელი')
 
-# Pie Chart
-st.subheader('Sales Distribution')
-fig_pie = px.pie(df, names='Category', values='Sales', title='Sales Distribution')
-st.plotly_chart(fig_pie)
+else:
+    st.warning('გთხოვთ, განათავსოთ მონაცემთა ფაილი პირველ რიგში.')
 
-# Forecast Generation
-st.header('Forecast Generation')
-forecast_period = st.slider('Select forecast period (months)', 1, 12, 3)
-# Example forecast logic (replace with actual forecasting logic)
-st.write(f'Forecasting for the next {forecast_period} months...')
-
-# Note: Replace placeholders and example logic with actual implementation based on your data and requirements.
+# Error handling and data validation
+if data.isnull().values.any():
+    st.error('მონაცემებში არის დაკარგული მნიშვნელობები! გთხოვთ, შეამოწმოთ.')
