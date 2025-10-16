@@ -1,38 +1,45 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 
-# Title of the application
-st.title('გაყიდვების ანალიტიკა')
+st.set_page_config(page_title="📊 გაყიდვების ანალიტიკა", page_icon="📊", layout="wide")
 
-# Upload data
-uploaded_file = st.file_uploader('აირჩიეთ მონაცემთა ფაილი', type=['csv'])
+st.markdown("# 📊 გაყიდვების ანალიტიკის სისტემა - XLSX")
+
+with st.sidebar:
+    uploaded_file = st.file_uploader("📁 XLSX ფაილის ატვირთვა", type=["xlsx", "xls"])
+
 if uploaded_file is not None:
     try:
-        data = pd.read_csv(uploaded_file)
-        st.success('მონაცემები წარმატებით ჩაიტვირთა!')
+        df = pd.read_excel(uploaded_file, sheet_name=0)
+        st.success("✅ XLSX ფაილი წარმატებით ჩატვირთა!")
+        
+        tab1, tab2, tab3 = st.tabs(["📈 დაშბორდი", "📊 ანალიზი", "🔮 პროგნოზა"])
+        
+        with tab1:
+            st.markdown("## 📊 დაশბორდი")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("📋 რიგი", len(df))
+            col2.metric("📊 სვეტი", len(df.columns))
+            col3.metric("✅ მონაცემი", df.notna().sum().sum())
+            st.dataframe(df, use_container_width=True)
+        
+        with tab2:
+            st.markdown("## 📊 ანალიზი")
+            selected_cols = st.multiselect("აირჩიეთ სვეტები", df.columns.tolist())
+            if selected_cols:
+                st.dataframe(df[selected_cols], use_container_width=True)
+        
+        with tab3:
+            st.markdown("## 🔮 პროგნოზა")
+            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            if numeric_cols:
+                metric = st.selectbox("აირჩიეთ მეტრიკა", numeric_cols)
+                growth = st.slider("ზრდის ტემპი (%)", 0, 100, 10)
+                forecast = df[metric].sum() * (1 + growth/100)
+                st.metric("პროგნოზა", f"{forecast:,.0f}")
+    
     except Exception as e:
-        st.error(f'მონაცემების ჩატვირთვის დროს მოხდა შეცდომა: {e}')
-
-# Ensure data is loaded
-if 'data' in locals():
-    # Dashboard tab
-    st.header('დაშბორდი')
-    st.subheader('გაყიდვების მიმოხილვა')
-    st.write(data.describe())
-
-    # Analysis tab
-    st.header('ანალიზი')
-    selected_product = st.selectbox('აირჩიეთ პროდუქტი', data['Product'].unique())
-    product_data = data[data['Product'] == selected_product]
-    st.line_chart(product_data['Sales'])
-
-    # Forecast tab
-    st.header('მიმდინარე პროგნოზი')
-    st.write('აქ უნდა იყოს პროგნოზირების მოდელი')
-
+        st.error(f"❌ შეცდომა: {str(e)}")
 else:
-    st.warning('გთხოვთ, განათავსოთ მონაცემთა ფაილი პირველ რიგში.')
-
-# Error handling and data validation
-if data.isnull().values.any():
-    st.error('მონაცემებში არის დაკარგული მნიშვნელობები! გთხოვთ, შეამოწმოთ.')
+    st.markdown("## 📁 XLSX ფაილის ატვირთვა")
